@@ -1,0 +1,6 @@
+2		bananas
+200	g	sugar
+130	g	melted butter
+95	g	flour
+40	g	cocoa powder
+0.125	tsp	salt

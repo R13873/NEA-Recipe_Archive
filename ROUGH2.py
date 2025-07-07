@@ -39,21 +39,29 @@ def search(keyword, multiple, display, collection):
         string = "ERROR - recipe not found"
     display.configure(text = string)
 
+##file.open(".txt", "r")
+##lines = file.readlines()
+##for line in lines:
+##    print(line.strip())
+##file.close
+
 recipes = []
 recipes.append(recipe("bread", 7))
-recipes[0].add_ingred(600, "g", "flour")
-recipes[0].add_ingred(450, "ml", "water")
-recipes[0].add_ingred(1, "tsp", "salt")
-recipes[0].add_ingred(1, "tsp", "sugar")
-recipes[0].add_ingred(1, "tsp", "yeast")
-recipes[0].add_ingred(1, "tbsp", "oil")
+doc = open("bread.txt", "r")
+lines = doc.readlines()
+for i in range(len(lines)):
+    lines[i] = lines[i].strip()
+    lines[i] = lines[i].split("\t")
+    recipes[0].add_ingred(lines[i][0], lines[i][1], lines[i][2])
+doc.close()
 recipes.append(recipe("brownies", 16))
-recipes[1].add_ingred(2, "", "bananas")
-recipes[1].add_ingred(200, "g", "sugar")
-recipes[1].add_ingred(130, "g", "melted butter")
-recipes[1].add_ingred(95, "g", "flour")
-recipes[1].add_ingred(40, "g", "cocoa powder")
-recipes[1].add_ingred(1/8, "tsp", "salt")
+doc = open("brownies.txt", "r")
+lines = doc.readlines()
+for i in range(len(lines)):
+    lines[i] = lines[i].strip()
+    lines[i] = lines[i].split("\t")
+    recipes[1].add_ingred(lines[i][0], lines[i][1], lines[i][2])
+doc.close()
 
 window = ctk.CTk()
 window.title("Test")
