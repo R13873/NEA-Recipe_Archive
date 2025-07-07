@@ -17,13 +17,14 @@ class recipe:
         else:
             intended = int(intended)
         fraction = self.serving_calc(intended)
-        string = ""
+        string = f"Servings:\t {intended}\n"
         for pair in  self._ingredients:
             string += f"{pair[0] * fraction} {pair[1]}\t\t{pair[2]}\n"
         return string
 
-def reset(take, out):
-    take.delete(0, ctk.END)
+def reset(ins, out):
+    for take in ins:
+        take.delete(0, ctk.END)
     out.configure(text = "")
 
 def search(keyword, multiple, display, collection):
@@ -61,9 +62,10 @@ window.geometry("600x400")
 ent_keyword = ctk.CTkEntry(window)
 lbl_serve = ctk.CTkLabel(window, text = "servings: ")
 ent_serve = ctk.CTkEntry(window)
+ents = [ent_keyword, ent_serve]
 btn_search = ctk.CTkButton(window, text = "search", command = lambda: search(ent_keyword, ent_serve, lbl_display, recipes))
 lbl_display = ctk.CTkLabel(window, text = "")
-btn_reset = ctk.CTkButton(window, text = "clear", command = lambda: reset(ent_keyword, lbl_display))
+btn_reset = ctk.CTkButton(window, text = "clear", command = lambda: reset(ents, lbl_display))
 ent_keyword.grid(row = 0, column = 1)
 btn_search.grid(row = 0, column = 2)
 lbl_serve.grid(row = 1, column = 0)
