@@ -22,13 +22,13 @@ def pretty(recipe_id, intended):
         intended = int(intended)
     fraction = intended / original
     string = f"Servings:\t {intended}\n"
-    ingredients = cur.execute(f"""SELECT Ingredients.ingred_name, Recipes.amount, Units.unit_value
+    ingredients = cur.execute(f"""SELECT Ingredients.ingred_name, Recipes.amount, Units.unit_value, IF (Recipes.unit_id = Ingredients.unit_id, "match", "miss")
 FROM Recipes, Ingredients, Units
 WHERE Recipes.meal_id = {recipe_id}
 AND Recipes.ingred_id = Ingredients.ingred_id
 AND Recipes.unit_id = Units.unit_id""").fetchall()
     for ingred in ingredients:
-        string += f"{ingred[0]}\t{ingred[1] * fraction} {ingred[2]}\n"
+        string += f"{ingred[0]}\t{ingred[1] * fraction} {ingred[2]}\t\t{ingred[3]}\n" #At some point, I'll use the match/miss for a simplified price calculation before doing unit conversion
     return string
 
 def search(keyword, multiple, display):
