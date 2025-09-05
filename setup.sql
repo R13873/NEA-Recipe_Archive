@@ -3,6 +3,8 @@
 	DROP TABLE IF EXISTS Meals;
 	DROP TABLE IF EXISTS Recipes;
 	DROP TABLE IF EXISTS Units;
+	DROP TABLE IF EXISTS Swap_original;
+	DROP TABLE IF EXISTS Swap_replacement;
 -- }}}
 
 -- {{{ Tables
@@ -30,7 +32,26 @@
 		FOREIGN KEY (meal_id) REFERENCES Meals (meal_id),
 		FOREIGN KEY (ingred_id) REFERENCES Ingredients (ingred_id),
 		FOREIGN KEY (unit_id) REFERENCES Units (unit_id));
-
+	
+	CREATE TABLE Swap_original (
+		swap_id INTEGER PRIMARY KEY, -- multiple replacement options
+		ingred_id INTEGER,
+		amount DECIMAL,
+		unit_id INTEGER,
+		FOREIGN KEY (meal_id) REFERENCES Meals (meal_id),
+		FOREIGN KEY (ingred_id) REFERENCES Ingredients (ingred_id),
+		FOREIGN KEY (unit_id) REFERENCES Units (unit_id));
+	
+	CREATE TABLE Swap_replacement (
+		swap_id INTEGER,
+		ingred_id INTEGER, -- replacement made up of multiple items
+		amount DECIMAL,
+		unit_id INTEGER,
+		FOREIGN KEY (swap_id) REFERENCES Swap_original (swap_id),
+		FOREIGN KEY (meal_id) REFERENCES Meals (meal_id),
+		FOREIGN KEY (ingred_id) REFERENCES Ingredients (ingred_id),
+		FOREIGN KEY (unit_id) REFERENCES Units (unit_id));
+	
 -- }}}
 
 -- {{{ Data
@@ -51,4 +72,5 @@
 .import Units.csv tmp
 	INSERT INTO Units (unit_id, unit_value) SELECT unit_id, unit_value FROM tmp;
 	DROP TABLE tmp;
+
 -- }}}
