@@ -38,7 +38,6 @@
 		ingred_id INTEGER,
 		amount DECIMAL,
 		unit_id INTEGER,
-		FOREIGN KEY (meal_id) REFERENCES Meals (meal_id),
 		FOREIGN KEY (ingred_id) REFERENCES Ingredients (ingred_id),
 		FOREIGN KEY (unit_id) REFERENCES Units (unit_id));
 	
@@ -48,7 +47,6 @@
 		amount DECIMAL,
 		unit_id INTEGER,
 		FOREIGN KEY (swap_id) REFERENCES Swap_original (swap_id),
-		FOREIGN KEY (meal_id) REFERENCES Meals (meal_id),
 		FOREIGN KEY (ingred_id) REFERENCES Ingredients (ingred_id),
 		FOREIGN KEY (unit_id) REFERENCES Units (unit_id));
 	
