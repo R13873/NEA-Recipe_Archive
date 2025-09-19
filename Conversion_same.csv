@@ -1,0 +1,5 @@
+unit1_id,unit2_id,type_id,multiplier
+1,6,2,1000
+2,7,1,1000
+2,3,1,5
+3,4,1,3

@@ -7,6 +7,7 @@ cur = conn.cursor()
 meals = cur.execute("SELECT * FROM Meals").fetchall()
 for meal in meals:
     print(meal[1])
+print()
 #prints a list for debug so I know what I shoud be searching
 
 def reset(ins, out): #resets input and output boxes
@@ -27,34 +28,6 @@ def find(keyword, multiple):
 def pretty(string, display):
     display.configure(text = string)
 
-def organise_swap_test(recipe_id, intended):
-    original = cur.execute(f"SELECT servings FROM Meals WHERE\"{int(recipe_id)}\" = meal_id;").fetchall()[0][0] #servings is returned as [(?,)]
-    if not intended.isnumeric():
-        intended = original #if value wasn't given, return unedited recipe
-    else:
-        intended = int(intended)
-    fraction = intended / original
-    string = f"Servings:\t {intended}\n"
-    #stays the same
-    ingredients = cur.execute(f"""SELECT Ingredients.ingred_id, Ingredients.ingred_name, Recipes.amount, Units.unit_value
-FROM Recipes, Ingredients, Units
-WHERE Recipes.meal_id = {int(recipe_id)}
-AND Recipes.ingred_id = Ingredients.ingred_id
-AND Recipes.unit_id = Units.unit_id""").fetchall()
-    swaps = []
-    for ingred in ingredients:
-        swaps = cur.execute(f"""SELECT swap_id FROM Swap_original WHERE \"{int(ingred[0])}\" = ingred_id""").fetchall()
-        print(swaps)
-        swaps = []
-##    ingredients = cur.execute(f"""SELECT Ingredients.ingred_name, Recipes.amount, Units.unit_value, IF (Recipes.unit_id = Ingredients.unit_id, "match", "miss")
-##FROM Recipes, Ingredients, Units
-##WHERE Recipes.meal_id = {recipe_id}
-##AND Recipes.ingred_id = Ingredients.ingred_id
-##AND Recipes.unit_id = Units.unit_id""").fetchall()
-##    for ingred in ingredients:
-##        string += f"{ingred[0]}\t{ingred[1] * fraction} {ingred[2]}\t\t{ingred[3]}\n" #At some point, I'll use the match/miss for a simplified price calculation before doing unit conversion
-##    return string
-
 def organise(recipe_id, intended):
     original = cur.execute(f"SELECT servings FROM Meals WHERE \"{int(recipe_id)}\" = meal_id;").fetchall()[0][0] #servings is returned as [(?,)]
     if not intended.isnumeric():
@@ -63,7 +36,7 @@ def organise(recipe_id, intended):
         intended = int(intended)
     fraction = intended / original
     string = f"Servings:\t {intended}\n"
-    ingredients = cur.execute(f"""SELECT Ingredients.ingred_name, Recipes.amount, Units.unit_value, IF (Recipes.unit_id = Ingredients.unit_id, "match", "miss")
+    ingredients = cur.execute(f"""SELECT Ingredients.ingred_name, Recipes.amount, Units.unit_value, IF (Recipes.unit_id = Ingredients.unit_id, "match", Ingredients.unit_id)
 FROM Recipes, Ingredients, Units
 WHERE Recipes.meal_id = {recipe_id}
 AND Recipes.ingred_id = Ingredients.ingred_id
@@ -72,14 +45,49 @@ AND Recipes.unit_id = Units.unit_id""").fetchall()
         string += f"{ingred[0]}\t{ingred[1] * fraction} {ingred[2]}\t\t{ingred[3]}\n" #At some point, I'll use the match/miss for a simplified price calculation before doing unit conversion
     return string
 
+def debug(): #I'll just use this to test code/print straight to terminal
+    print(cur.execute("SELECT * FROM Units").fetchall())
+    print(cur.execute("SELECT * FROM Ingredients").fetchall())
+    print(cur.execute("SELECT * FROM Meals").fetchall())
+    print(cur.execute("SELECT * FROM Recipes").fetchall())
+    print(cur.execute("SELECT * FROM Swap_original").fetchall())
+    print(cur.execute("SELECT * FROM Swap_replacement").fetchall())
+
+##     original = cur.execute(f"SELECT servings FROM Meals WHERE\"{int(recipe_id)}\" = meal_id;").fetchall()[0][0] #servings is returned as [(?,)]
+##    if not intended.isnumeric():
+##        intended = original #if value wasn't given, return unedited recipe
+##    else:
+##        intended = int(intended)
+##    fraction = intended / original
+##    string = f"Servings:\t {intended}\n"
+##    #stays the same
+##    ingredients = cur.execute(f"""SELECT Ingredients.ingred_id, Ingredients.ingred_name, Recipes.amount, Units.unit_value
+##FROM Recipes, Ingredients, Units
+##WHERE Recipes.meal_id = {int(recipe_id)}
+##AND Recipes.ingred_id = Ingredients.ingred_id
+##AND Recipes.unit_id = Units.unit_id""").fetchall()
+##    swaps = []
+##    for ingred in ingredients:
+##        swaps = cur.execute(f"""SELECT swap_id FROM Swap_original WHERE \"{int(ingred[0])}\" = ingred_id""").fetchall()
+##        print(swaps)
+##        swaps = []
+####    ingredients = cur.execute(f"""SELECT Ingredients.ingred_name, Recipes.amount, Units.unit_value, IF (Recipes.unit_id = Ingredients.unit_id, "match", "miss")
+####FROM Recipes, Ingredients, Units
+####WHERE Recipes.meal_id = {recipe_id}
+####AND Recipes.ingred_id = Ingredients.ingred_id
+####AND Recipes.unit_id = Units.unit_id""").fetchall()
+####    for ingred in ingredients:
+####        string += f"{ingred[0]}\t{ingred[1] * fraction} {ingred[2]}\t\t{ingred[3]}\n" #At some point, I'll use the match/miss for a simplified price calculation before doing unit conversion
+####    return string
+
 def search(keyword, multiple, display):
     found, num = find(keyword, multiple)
     if found == None:
         string = "ERROR - recipe not found"
     else:
         string = organise(found, num)
-        organise_swap_test(found, num)
     pretty(string, display)
+##    debug()
 
 window = ctk.CTk()
 window.title("Test")
@@ -90,7 +98,7 @@ lbl_serve = ctk.CTkLabel(window, text = "servings: ")
 ent_serve = ctk.CTkEntry(window)
 ents = [ent_keyword, ent_serve]
 btn_search = ctk.CTkButton(window, text = "search", command = lambda: search(ent_keyword, ent_serve, lbl_display))
-btn_swap = ctk.CTkButton(window, text = "swap", command = lambda: swap(ent_keyword, ent_serve, lbl_display))
+btn_swap = ctk.CTkButton(window, text = "swap", command = lambda: search(ent_keyword, ent_serve, lbl_display))
 lbl_display = ctk.CTkLabel(window, text = "")
 btn_reset = ctk.CTkButton(window, text = "clear", command = lambda: reset(ents, lbl_display))
 
