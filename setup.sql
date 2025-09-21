@@ -6,7 +6,7 @@
 	DROP TABLE IF EXISTS Units;
 	DROP TABLE IF EXISTS Swap_original;
 	DROP TABLE IF EXISTS Swap_replacement;
-	DROP TABLE IF EXISTS Conversion_same
+	DROP TABLE IF EXISTS Conversion_same;
 	DROP TABLE IF EXISTS Conversion_other;
 -- }}}
 
@@ -74,8 +74,8 @@
 		unit_mass_id INTEGER, -- / density -> unit_vol_id
 		density DECIMAL,
 		FOREIGN KEY (ingred_id) REFERENCES Ingredients (ingred_id),
-		FOREIGN KEY (unit-vol_id) REFERENCES Units (unit_id),
-		FOREIGN KEY (unit-mass_id) REFERENCES Units (unit_id));
+		FOREIGN KEY (unit_vol_id) REFERENCES Units (unit_id),
+		FOREIGN KEY (unit_mass_id) REFERENCES Units (unit_id));
 	
 -- }}}
 
@@ -94,8 +94,8 @@
 	INSERT INTO Recipes (meal_id, ingred_id, amount, unit_id) SELECT meal_id, ingred_id, amount, unit_id FROM tmp;
 	DROP TABLE tmp;
 
-.import Unit_type.cvsv tmp
-	INSERT INTO Unit_type (type_id, type_name) SELECT type_id, type_name FROM tmp:
+.import Unit_type.csv tmp
+	INSERT INTO Unit_type (type_id, type_name) SELECT type_id, type_name FROM tmp;
 	DROP TABLE tmp;
 
 .import Units.csv tmp
@@ -103,11 +103,11 @@
 	DROP TABLE tmp;
 
 .import Swap_original.csv tmp
-	INSERT INTO Swap_original (swap_id, ingred_id, amount, unit_id) SELECT swap_id, ingredf_id, amount, unit_id FROM tmp;
+	INSERT INTO Swap_original (swap_id, ingred_id, amount, unit_id) SELECT swap_id, ingred_id, amount, unit_id FROM tmp;
 	DROP TABLE tmp;
 
 .import Swap_replacement.csv tmp
-	INSERT INTO Swap_replacement (swap_id, ingred_id, amount, unit_id) SELECT swap_id, ingredf_id, amount, unit_id FROM tmp;
+	INSERT INTO Swap_replacement (swap_id, ingred_id, amount, unit_id) SELECT swap_id, ingred_id, amount, unit_id FROM tmp;
 	DROP TABLE tmp;
 
 .import Conversion_same.csv tmp
