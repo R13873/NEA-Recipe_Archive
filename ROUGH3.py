@@ -8,6 +8,14 @@ meals = cur.execute("SELECT * FROM Meals").fetchall()
 for meal in meals:
     print(meal[1])
 #prints a list for debug so I know what I shoud be searching
+##print(cur.execute("SELECT * FROM Ingredients").fetchall())
+##print(cur.execute("SELECT * FROM Meals").fetchall())
+##print(cur.execute("SELECT * FROM Recipes").fetchall())
+##print(cur.execute("SELECT * FROM Units").fetchall())
+##print(cur.execute("SELECT * FROM Swap_original").fetchall())
+##print(cur.execute("SELECT * FROM Swap_replacement").fetchall())
+##print(cur.execute("SELECT * FROM Conversion_same").fetchall())
+##print(cur.execute("SELECT * FROM Conversion_other").fetchall())
 
 def reset(ins, out): #resets input and output boxes
     for take in ins:
@@ -63,13 +71,21 @@ def organise(recipe_id, intended):
         intended = int(intended)
     fraction = intended / original
     string = f"Servings:\t {intended}\n"
-    ingredients = cur.execute(f"""SELECT Ingredients.ingred_name, Recipes.amount, Units.unit_value, IF (Recipes.unit_id = Ingredients.unit_id, "match", "miss")
+    ingredients = cur.execute(f"""SELECT Ingredients.ingred_name, Recipes.amount, Units.unit_value, IF (Recipes.unit_id = Ingredients.unit_id, "match", "miss"), Ingredients.ingred_id
 FROM Recipes, Ingredients, Units
 WHERE Recipes.meal_id = {recipe_id}
 AND Recipes.ingred_id = Ingredients.ingred_id
 AND Recipes.unit_id = Units.unit_id""").fetchall()
     for ingred in ingredients:
-        string += f"{ingred[0]}\t{ingred[1] * fraction} {ingred[2]}\t\t{ingred[3]}\n" #At some point, I'll use the match/miss for a simplified price calculation before doing unit conversion
+        if ingred[3] == "miss":
+            mult = "?"
+##            mult = cur.execute(f"""SELECT Conversion_same.multiplier FROM Conversion_same, Ingredients
+##WHERE Ingredients.ingred_id = {ingred[4]}
+##AND Conversion_same.unit1_id = {ingred[2]}
+##AND Conversion_same.unit2_id = Ingredients.unit_id""").fetchall()[0][0]
+        else:
+            mult = 1
+        string += f"{ingred[0]}\t{ingred[1] * fraction} {ingred[2]}\t\t{ingred[3]},{mult}\n"
     return string
 
 def search(keyword, multiple, display):
