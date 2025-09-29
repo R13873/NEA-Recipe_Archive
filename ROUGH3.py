@@ -71,7 +71,7 @@ def organise(recipe_id, intended):
         intended = int(intended)
     fraction = intended / original
     string = f"Servings:\t {intended}\n"
-    ingredients = cur.execute(f"""SELECT Ingredients.ingred_name, Recipes.amount, Units.unit_value, IF (Recipes.unit_id = Ingredients.unit_id, "match", "miss"), Ingredients.ingred_id
+    ingredients = cur.execute(f"""SELECT Ingredients.ingred_name, Recipes.amount, Units.unit_value, IF (Recipes.unit_id = Ingredients.unit_id, "match", "miss"), Recipes.unit_id, Ingredients.unit_id
 FROM Recipes, Ingredients, Units
 WHERE Recipes.meal_id = {recipe_id}
 AND Recipes.ingred_id = Ingredients.ingred_id
@@ -79,10 +79,10 @@ AND Recipes.unit_id = Units.unit_id""").fetchall()
     for ingred in ingredients:
         if ingred[3] == "miss":
             mult = "?"
-##            mult = cur.execute(f"""SELECT Conversion_same.multiplier FROM Conversion_same, Ingredients
-##WHERE Ingredients.ingred_id = {ingred[4]}
-##AND Conversion_same.unit1_id = {ingred[2]}
-##AND Conversion_same.unit2_id = Ingredients.unit_id""").fetchall()[0][0]
+            print(cur.execute(f"""SELECT multiplier, unit1_id, unit2_id FROM Conversion_same
+--WHERE unit1_id = {ingred[4]}
+--AND unit2_id = {ingred[5]} -- comments out in SQL
+""").fetchall(), ingred[4], ingred[5])
         else:
             mult = 1
         string += f"{ingred[0]}\t{ingred[1] * fraction} {ingred[2]}\t\t{ingred[3]},{mult}\n"
