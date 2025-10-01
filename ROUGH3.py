@@ -49,11 +49,17 @@ FROM Recipes, Ingredients, Units
 WHERE Recipes.meal_id = {int(recipe_id)}
 AND Recipes.ingred_id = Ingredients.ingred_id
 AND Recipes.unit_id = Units.unit_id""").fetchall()
-    swaps = []
     for ingred in ingredients:
-        swaps = cur.execute(f"""SELECT swap_id FROM Swap_original WHERE \"{int(ingred[0])}\" = ingred_id""").fetchall()
-        print(swaps)
-        swaps = []
+        try:
+            swap_id = cur.execute(f"""SELECT swap_id FROM Swap_original WHERE \"{int(ingred[0])}\" = ingred_id""").fetchall()[0][0]
+            swap = cur.execute(f"""SELECT Ingredients.ingred_name, Swap_replacement.amount, Units.unit_value
+FROM Ingredients, Swap_replacement, Units
+WHERE Swap_replacement.swap_id = {swap_id}
+AND Swap_replacement.ingred_id = Ingredients.ingred_id
+AND Swap_replacement.unit_id = Units.unit_id""").fetchall()
+            print(swap)
+        except IndexError:
+            string += f"{ingred[1]}\t{ingred[2]*fraction} {ingred[3]}\n" # ingred_name, amount, unit_value
 ##    ingredients = cur.execute(f"""SELECT Ingredients.ingred_name, Recipes.amount, Units.unit_value, IF (Recipes.unit_id = Ingredients.unit_id, "match", "miss")
 ##FROM Recipes, Ingredients, Units
 ##WHERE Recipes.meal_id = {recipe_id}
@@ -98,7 +104,7 @@ def search(keyword, multiple, display):
     pretty(string, display)
 
 window = ctk.CTk()
-window.title("Test")
+window.title("Mark1 Search")
 window.geometry("600x400")
 
 ent_keyword = ctk.CTkEntry(window)
