@@ -17,7 +17,7 @@
 	
 	CREATE TABLE Units (
 		unit_id INTEGER PRIMARY KEY,
-		unitvalue TEXT,
+		unit_value TEXT,
 		type_id INTEGER,
 		FOREIGN KEY (type_id) REFERENCES Unit_type (type_id));
 	
@@ -87,7 +87,7 @@
 	DROP TABLE tmp;
 
 .import Units.csv tmp
-	INSERT INTO Units (unit_id, unitvalue) SELECT unit_id, unitvalue FROM tmp;
+	INSERT INTO Units (unit_id, unit_value) SELECT unit_id, unit_value FROM tmp;
 	DROP TABLE tmp;
 
 .import Conv_same.csv tmp
