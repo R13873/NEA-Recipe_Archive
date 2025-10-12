@@ -38,7 +38,20 @@ def pretty(out, display): #outputs recipe
     if len(out) == 0:
         string = "Error - Recipe Not Found"
     else:
-        print(out)
+        string = f"Servings: {out[0][0]}\n"
+        long = 0
+        pad_char = " "
+        for i in range(1, len(out)):
+            if len(str(out[i][0])) > long:
+                long = len(str(out[i][0]))
+                print(long)
+        for i in range(1, len(out)):
+            if out[i][1] % 1 != 0:
+                string += f"{out[i][0]:{pad_char}<{long}}\t{out[i][1]:.3f} {out[i][2]}"
+            else:
+                string += f"{out[i][0]:{pad_char}<{long}}\t{out[i][1]:.0f} {out[i][2]}"
+            if i != len(out) - 1:
+                string += "\n"
     display.configure(text = string)
 
 def find(keyword, multiple): #gets user inputs
@@ -52,6 +65,7 @@ def find(keyword, multiple): #gets user inputs
     return found, num
 
 def multiplier(original, intended):
+    intended = str(intended) #isnumeric only works on string?
     if not intended.isnumeric():
         intended = original #if value wasn't given, return unedited recipe
     else:
@@ -60,17 +74,20 @@ def multiplier(original, intended):
     return frac, intended
 
 def neat(items, frac, button, out):
-    if button == "swap":
-        swap = cur.execute(f"SELECT swap_id, amount FROM Swap_og WHERE {items[0]} = ingred_id").fetchall()
-        frac_swap = multiplier(swap[1], items[2])
-        replacements = cur.execute(f"""SELECT Ingredients.ingred_id, Ingredients.ingred_name -- 0,1
-Swap_repl.amount -- 2
-IF (Swap_repl.unit_id = Ingredients.unit_id, "match", "miss") -- 3
-Swap_repl.unit_id, Ingredients.unit_id, Units.unit_value -- unit_value for the swap, 4,5,6""").fetchall()
-        if len(replacements) != 0: #if a swap was found
+    for item in items:
+        swap = cur.execute(f"SELECT swap_id, amount FROM Swap_og WHERE {item[0]} = ingred_id").fetchall()
+        if len(swap) != 0 and button == "swap": # if a swap is available
+            frac_swap = multiplier(swap[0][1], item[2])[0] #only first swap for now, also only gets frac from multiplier
+            replacements = cur.execute(f"""SELECT Ingredients.ingred_id, Ingredients.ingred_name, -- 0,1
+Swap_repl.amount, -- 2
+IF (Swap_repl.unit_id = Ingredients.unit_id, "match", "miss"), -- 3
+Swap_repl.unit_id, Ingredients.unit_id, Units.unit_value -- unit_value for the swap, 4,5,6
+FROM Ingredients, Swap_repl, Units
+WHERE Swap_repl.swap_id = {swap[0][0]} -- only first swap for now
+AND Swap_repl.ingred_id = Ingredients.ingred_id
+AND Swap_repl.unit_id = Units.unit_id""").fetchall()
             out = neat(replacements, frac * frac_swap, "search", out)
-    else:
-        for item in items:
+        else:
             out.append([item[1], item[2] * frac, item[6]])
     return out
         
@@ -81,20 +98,21 @@ def card(recipe_id, intended, button):
     out = [[servings]]
     ingredients = cur.execute(f"""SELECT Ingredients.ingred_id, Ingredients.ingred_name, -- 0,1
 Recipes.amount, -- 2
-IF (Recipes.unit_id = Ingredients.unit_id, "match", "miss") -- 3
-Recipes.unit_id, Ingrediets.unit_id, Units.unit_value -- unit_value for the recipe, 4,5,6
+IF (Recipes.unit_id = Ingredients.unit_id, "match", "miss"), -- 3
+Recipes.unit_id, Ingredients.unit_id, Units.unit_value -- unit_value for the recipe, 4,5,6
 FROM Ingredients, Recipes, Units
 WHERE Recipes.meal_id = {recipe_id}
 AND Recipes.ingred_id = Ingredients.ingred_id
 AND Recipes.unit_id = Units.unit_id""").fetchall()
     out = neat(ingredients, frac_gen, button, out)
+    return out
 
 def search(keyword, multiple, display, button):
     found, num = find(keyword, multiple)
     if found == None:
-        out = card(found, num, button)
+        out = []
     else:
-        card(found, num, button)
+        out = card(found, num, button)
     pretty(out, display)
 
 window = ctk.CTk()
@@ -105,15 +123,15 @@ ent_keyword = ctk.CTkEntry(window)
 lbl_serve = ctk.CTkLabel(window, text = "servings: ")
 ent_serve = ctk.CTkEntry(window)
 ents = [ent_keyword, ent_serve]
-lbl_display = ctk.CTkLabel(window, text = "")
+lbl_display = ctk.CTkLabel(window, text = "", justify = "left", font=ctk.CTkFont(family="Courier")) #monospace font so that everything aligns
 btn_search = ctk.CTkButton(window, text = "search", command = lambda: search(ent_keyword, ent_serve, lbl_display, "search"))
 btn_reset = ctk.CTkButton(window, text = "clear", command = lambda: reset(ents, lbl_display))
 btn_swap = ctk.CTkButton(window, text = "swap", command = lambda: search(ent_keyword, ent_serve, lbl_display, "swap"))
 
 
+btn_search.grid(row = 0, column = 0)
 ent_keyword.grid(row = 0, column = 1)
-btn_search.grid(row = 0, column = 2)
-btn_swap.grid(row = 0, column = 3)
+btn_swap.grid(row = 0, column = 2)
 lbl_serve.grid(row = 1, column = 0)
 ent_serve.grid(row = 1, column = 1)
 btn_reset.grid(row = 1, column = 2)
