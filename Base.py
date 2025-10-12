@@ -84,7 +84,7 @@ IF ({table}.unit_id = Ingredients.unit_id, "match", "miss"), -- 3
 FROM Ingredients, {table}, Units
 WHERE {table}.{tag}_id = {match} -- only first swap for now
 AND {table}.ingred_id = Ingredients.ingred_id
-AND {table}.unit_id = Units.unit_id""").fetchall()
+AND {table}.unit_id = Units.unit_id""").fetchall() # NEED TO FIX SWAP UNIT MATCHING
     return out
 
 def neat(items, frac, button, out):
