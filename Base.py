@@ -44,7 +44,6 @@ def pretty(out, display): #outputs recipe
         for i in range(1, len(out)):
             if len(str(out[i][0])) > long:
                 long = len(str(out[i][0]))
-                print(long)
         for i in range(1, len(out)):
             if out[i][1] % 1 != 0:
                 string += f"{out[i][0]:{pad_char}<{long}}\t{out[i][1]:.3f} {out[i][2]}"
@@ -73,19 +72,27 @@ def multiplier(original, intended):
     frac = intended / original
     return frac, intended
 
+def collect(table, match):
+    if table == "Recipes":
+        tag = "meal"
+    elif table == "Swap_repl":
+        tag = "swap"
+    out = cur.execute(f"""SELECT Ingredients.ingred_id, Ingredients.ingred_name, -- 0,1
+{table}.amount, -- 2
+IF ({table}.unit_id = Ingredients.unit_id, "match", "miss"), -- 3
+{table}.unit_id, Ingredients.unit_id, Units.unit_value -- unit_value for the swap, 4,5,6
+FROM Ingredients, {table}, Units
+WHERE {table}.{tag}_id = {match} -- only first swap for now
+AND {table}.ingred_id = Ingredients.ingred_id
+AND {table}.unit_id = Units.unit_id""").fetchall()
+    return out
+
 def neat(items, frac, button, out):
     for item in items:
         swap = cur.execute(f"SELECT swap_id, amount FROM Swap_og WHERE {item[0]} = ingred_id").fetchall()
         if len(swap) != 0 and button == "swap": # if a swap is available
             frac_swap = multiplier(swap[0][1], item[2])[0] #only first swap for now, also only gets frac from multiplier
-            replacements = cur.execute(f"""SELECT Ingredients.ingred_id, Ingredients.ingred_name, -- 0,1
-Swap_repl.amount, -- 2
-IF (Swap_repl.unit_id = Ingredients.unit_id, "match", "miss"), -- 3
-Swap_repl.unit_id, Ingredients.unit_id, Units.unit_value -- unit_value for the swap, 4,5,6
-FROM Ingredients, Swap_repl, Units
-WHERE Swap_repl.swap_id = {swap[0][0]} -- only first swap for now
-AND Swap_repl.ingred_id = Ingredients.ingred_id
-AND Swap_repl.unit_id = Units.unit_id""").fetchall()
+            replacements = collect("Swap_repl", swap[0][0])
             out = neat(replacements, frac * frac_swap, "search", out)
         else:
             out.append([item[1], item[2] * frac, item[6]])
@@ -96,14 +103,7 @@ def card(recipe_id, intended, button):
     original = cur.execute(f"SELECT servings FROM Meals WHERE {recipe_id} = meal_id").fetchall()[0][0]
     frac_gen, servings = multiplier(original, intended)
     out = [[servings]]
-    ingredients = cur.execute(f"""SELECT Ingredients.ingred_id, Ingredients.ingred_name, -- 0,1
-Recipes.amount, -- 2
-IF (Recipes.unit_id = Ingredients.unit_id, "match", "miss"), -- 3
-Recipes.unit_id, Ingredients.unit_id, Units.unit_value -- unit_value for the recipe, 4,5,6
-FROM Ingredients, Recipes, Units
-WHERE Recipes.meal_id = {recipe_id}
-AND Recipes.ingred_id = Ingredients.ingred_id
-AND Recipes.unit_id = Units.unit_id""").fetchall()
+    ingredients = collect("Recipes", recipe_id)
     out = neat(ingredients, frac_gen, button, out)
     return out
 
