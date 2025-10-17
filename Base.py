@@ -13,21 +13,34 @@ cur = conn.cursor()
 ##Swap_repl(swap_id, ingred_id, amount, unit_id)
 ##Conv_same(unit1_id, unit2_id, ratio)
 ##Conv_other(ingred_id, unitvol_id, unitmass_id, density)
-##print(cur.execute("SELECT * FROM Unit_type".fetchall()))
-##print(cur.execute("SELECT * FROM Units".fetchall()))
-##print(cur.execute("SELECT * FROM Ingredients".fetchall()))
-##print(cur.execute("SELECT * FROM Meals".fetchall()))
-##print(cur.execute("SELECT * FROM Recipes".fetchall()))
-##print(cur.execute("SELECT * FROM Swap_og".fetchall()))
-##print(cur.execute("SELECT * FROM Swap_repl".fetchall()))
-##print(cur.execute("SELECT * FROM Conv_same".fetchall()))
-##print(cur.execute("SELECT * FROM Conv_other".fetchall()))
+print(cur.execute("SELECT * FROM Unit_type").fetchall())
+print(cur.execute("SELECT * FROM Units").fetchall())
+print(cur.execute("SELECT * FROM Ingredients").fetchall())
+print(cur.execute("SELECT * FROM Meals").fetchall())
+print(cur.execute("SELECT * FROM Recipes").fetchall())
+print(cur.execute("SELECT * FROM Swap_og").fetchall())
+print(cur.execute("SELECT * FROM Swap_repl").fetchall())
+print(cur.execute("SELECT * FROM Conv_same").fetchall())
+print(cur.execute("SELECT * FROM Conv_other").fetchall())
+print(cur.execute("SELECT unit2_id, ratio FROM Conv_same WHERE unit2_id = 7").fetchall())
 
 meals = cur.execute("SELECT meal_name FROM Meals").fetchall() #returns [[,],[,]] etc.
 for meal in meals:
     print(meal[0]) #prints debug list of what can be searched
-def place_holder():
-    pass
+
+def place_holder(target, current):
+    if target[0] != current[0]:#type_id
+        hold = cur.execute(f"SELECT unitvol_id, unitmass_id, density FROM Conv_other WHERE ingred_id = {current[2]}").fetchall()[0]#current[2] is ingred_id
+        if current[0] == 2:#mass
+            pass
+        else:#vol & num
+            pass
+    else:
+        if target[1] != current[1]:#unit_id
+            conversions = cur.execute(f"SELECT unit2_id, ratio FROM Conv_same WHERE unit1_id = {target[1]}").fetchall()
+            found = False
+            for conv in conversions:
+                pass
 
 def reset(ins, out): #resets input and output boxes
     for take in ins:

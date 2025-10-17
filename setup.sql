@@ -24,11 +24,9 @@
 	CREATE TABLE Conv_same (
 		unit1_id INTEGER, -- * ratio -> unit2_id
 		unit2_id INTEGER, -- / ratio -> unit1_id
-		type_id INTEGER,
 		ratio DECIMAL, -- unit2/unit1
-		FOREIGN KEY (unit1_id) REFERENCES Units (unit_id)
-		FOREIGN KEY (unit2_id) REFERENCES Units (unit_id)
-		FOREIGN KEY (type_id) REFERENCES Unit_type (type_id));
+		FOREIGN KEY (unit1_id) REFERENCES Units (unit_id),
+		FOREIGN KEY (unit2_id) REFERENCES Units (unit_id));
 	
 	CREATE TABLE Ingredients (
 		ingred_id INTEGER PRIMARY KEY,
@@ -87,11 +85,11 @@
 	DROP TABLE tmp;
 
 .import Units.csv tmp
-	INSERT INTO Units (unit_id, unit_value) SELECT unit_id, unit_value FROM tmp;
+	INSERT INTO Units (unit_id, unit_value, type_id) SELECT unit_id, unit_value, type_id FROM tmp;
 	DROP TABLE tmp;
 
 .import Conv_same.csv tmp
-	INSERT INTO Conv_same (unit1_id, unit2_id, type_id, ratio) SELECT unit1_id, unit2_id, type_id, ratio FROM tmp;
+	INSERT INTO Conv_same (unit1_id, unit2_id, ratio) SELECT unit1_id, unit2_id, ratio FROM tmp;
 	DROP TABLE tmp;
 
 .import Ingredients.csv tmp
