@@ -13,34 +13,41 @@ cur = conn.cursor()
 ##Swap_repl(swap_id, ingred_id, amount, unit_id)
 ##Conv_same(unit1_id, unit2_id, ratio)
 ##Conv_other(ingred_id, unitvol_id, unitmass_id, density)
-print(cur.execute("SELECT * FROM Unit_type").fetchall())
-print(cur.execute("SELECT * FROM Units").fetchall())
-print(cur.execute("SELECT * FROM Ingredients").fetchall())
-print(cur.execute("SELECT * FROM Meals").fetchall())
-print(cur.execute("SELECT * FROM Recipes").fetchall())
-print(cur.execute("SELECT * FROM Swap_og").fetchall())
-print(cur.execute("SELECT * FROM Swap_repl").fetchall())
-print(cur.execute("SELECT * FROM Conv_same").fetchall())
-print(cur.execute("SELECT * FROM Conv_other").fetchall())
-print(cur.execute("SELECT unit2_id, ratio FROM Conv_same WHERE unit2_id = 7").fetchall())
+##print(cur.execute("SELECT * FROM Unit_type").fetchall())
+##print(cur.execute("SELECT * FROM Units").fetchall())
+##print(cur.execute("SELECT * FROM Ingredients").fetchall())
+##print(cur.execute("SELECT * FROM Meals").fetchall())
+##print(cur.execute("SELECT * FROM Recipes").fetchall())
+##print(cur.execute("SELECT * FROM Swap_og").fetchall())
+##print(cur.execute("SELECT * FROM Swap_repl").fetchall())
+##print(cur.execute("SELECT * FROM Conv_same").fetchall())
+##print(cur.execute("SELECT * FROM Conv_other").fetchall()))
 
 meals = cur.execute("SELECT meal_name FROM Meals").fetchall() #returns [[,],[,]] etc.
 for meal in meals:
     print(meal[0]) #prints debug list of what can be searched
 
 def place_holder(target, current):
+    multiplier = 1
     if target[0] != current[0]:#type_id
-        hold = cur.execute(f"SELECT unitvol_id, unitmass_id, density FROM Conv_other WHERE ingred_id = {current[2]}").fetchall()[0]#current[2] is ingred_id
-        if current[0] == 2:#mass
-            pass
-        else:#vol & num
-            pass
-    else:
-        if target[1] != current[1]:#unit_id
+        conv = cur.execute(f"SELECT unitvol_id, unitmass_id, density FROM Conv_other WHERE ingred_id = {current[2]}").fetchall()[0]#current[2] is ingred_id
+        if current[0] == 2:#mass -> vol or num
+            multiplier = place_holder([current[0], conv[1]], current) / conv[2] # mass / density = vol
+            current[target[0], conv[0], current[2]]
+        else:#vol & num -> mass
+            multiplier = place_holder([current[0], conv[0]],current) * conv[2] # vol * density  = mass
+            current = [target[0], conv[1], current[2]]
+    if target[1] != current[1]:#unit_id
+        conversions = cur.execute(f"SELECT unit1_id, ratio FROM Conv_same WHERE unit2_id = {target[1]}").fetchall()
+        if len(conversions) == 0:
             conversions = cur.execute(f"SELECT unit2_id, ratio FROM Conv_same WHERE unit1_id = {target[1]}").fetchall()
-            found = False
             for conv in conversions:
-                pass
+                conv[1] = 1 / conv[1]
+        for conv in conversions:
+            if conv[0] == current[1]:#unit_id matches
+                return multiplier * conv[1] #return the multiplier
+            else:
+                return multiplier * conv[1] * place_holder(target,[current[0], conv[0], current[2]])
 
 def reset(ins, out): #resets input and output boxes
     for take in ins:
