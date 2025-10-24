@@ -13,13 +13,13 @@ cur = conn.cursor()
 ##Swap_repl(swap_id, ingred_id, amount, unit_id)
 ##Conv_same(unit1_id, unit2_id, ratio)
 ##Conv_other(ingred_id, unitvol_id, unitmass_id, density)
-print(cur.execute("SELECT * FROM Unit_type").fetchall())
-print(cur.execute("SELECT * FROM Units").fetchall())
-print(cur.execute("SELECT * FROM Ingredients").fetchall())
-print(cur.execute("SELECT * FROM Meals").fetchall())
-print(cur.execute("SELECT * FROM Recipes").fetchall())
-print(cur.execute("SELECT * FROM Swap_og").fetchall())
-print(cur.execute("SELECT * FROM Swap_repl").fetchall())
+##print(cur.execute("SELECT * FROM Unit_type").fetchall())
+##print(cur.execute("SELECT * FROM Units").fetchall())
+##print(cur.execute("SELECT * FROM Ingredients").fetchall())
+##print(cur.execute("SELECT * FROM Meals").fetchall())
+##print(cur.execute("SELECT * FROM Recipes").fetchall())
+##print(cur.execute("SELECT * FROM Swap_og").fetchall())
+##print(cur.execute("SELECT * FROM Swap_repl").fetchall())
 print(cur.execute("SELECT * FROM Conv_same").fetchall())
 print(cur.execute("SELECT * FROM Conv_other").fetchall())
 
@@ -28,26 +28,38 @@ for meal in meals:
     print(meal[0]) #prints debug list of what can be searched
 
 def place_holder(target, current):
-    multiplier = 1
+    #target = [target_type, target_unit, last_unit] #[type_id, unit_id, ingred_id] #If calling for the first time, last_unit is same as target_unit
+    #current = [current_type, current_unit, ingred] #[type_id, unit_id, unit_id]
+    mult = 1
     if target[0] != current[0]:#type_id
-        conv = cur.execute(f"SELECT unitvol_id, unitmass_id, density FROM Conv_other WHERE ingred_id = {current[2]}").fetchall()[0]#current[2] is ingred_id
+        try:
+            conv = cur.execute(f"SELECT unitvol_id, unitmass_id, density FROM Conv_other WHERE ingred_id = {current[2]}").fetchall()[0]#current[2] is ingred_id
+        except IndexError: #there isn't a conversion available for the ingredient
+            return None
         if current[0] == 2:#mass -> vol or num
-            multiplier = place_holder([current[0], conv[1]], current) / conv[2] # mass / density = vol
-            current[target[0], conv[0], current[2]]
+            mult = place_holder([current[0], conv[1], conv[1]], current) / conv[2] # mass / density = vol
+            current[target[0], conv[0], current[2]] #now required type, unitvol_id, same ingredient
         else:#vol & num -> mass
-            multiplier = place_holder([current[0], conv[0]],current) * conv[2] # vol * density  = mass
-            current = [target[0], conv[1], current[2]]
+            mult = place_holder([current[0], conv[0], conv[0]],current) * conv[2] # vol * density  = mass
+            current = [target[0], conv[1], current[2]] #now required type, unitmass_id, same ingredient
     if target[1] != current[1]:#unit_id
-        conversions = cur.execute(f"SELECT unit1_id, ratio FROM Conv_same WHERE unit2_id = {target[1]}").fetchall()
+        conversions = cur.execute(f"SELECT unit1_id, ratio FROM Conv_same WHERE unit2_id = {target[1]} AND unit1_id <> {target[2]}").fetchall()
         if len(conversions) == 0:
-            conversions = cur.execute(f"SELECT unit2_id, ratio FROM Conv_same WHERE unit1_id = {target[1]}").fetchall()
+            conversions = cur.execute(f"SELECT unit2_id, ratio FROM Conv_same WHERE unit1_id = {target[1]} AND unit2_id <> {target[2]}").fetchall()
             for conv in conversions:
                 conv[1] = 1 / conv[1]
+        if len(conversions) == 0:
+            return None
         for conv in conversions:
             if conv[0] == current[1]:#unit_id matches
-                return multiplier * conv[1] #return the multiplier
+                return mult * conv[1] #return the multiplier, no need to go through rest of loop
             else:
-                return multiplier * conv[1] * place_holder(target,[current[0], conv[0], current[2]])
+                mini_mult = place_holder([target[0], conv[0], target[1]], current)
+                if mini_mult != None:
+                    return mult * conv[1] * mini_mult
+        return None #this point will only be reached if the for loop has been completed without finding a conversion
+    else: #both the type and unit match
+        return mult
 
 def reset(ins, out): #resets input and output boxes
     for take in ins:
