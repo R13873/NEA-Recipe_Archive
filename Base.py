@@ -27,7 +27,10 @@ meals = cur.execute("SELECT meal_name FROM Meals").fetchall() #returns [[,],[,]]
 for meal in meals:
     print(meal[0]) #prints debug list of what can be searched
 
-def place_holder(target, current):
+def place_holder():
+    pass
+
+def unit_match(target, current):
     #target = [target_type, target_unit, last_unit] #[type_id, unit_id, ingred_id] #If calling for the first time, last_unit is same as target_unit
     #current = [current_type, current_unit, ingred] #[type_id, unit_id, unit_id]
     mult = 1
