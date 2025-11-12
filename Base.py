@@ -30,40 +30,6 @@ for meal in meals:
 def place_holder():
     pass
 
-def unit_match(target, current):
-    #target = [target_type, target_unit, last_unit] #[type_id, unit_id, ingred_id] #If calling for the first time, last_unit is same as target_unit
-    #current = [current_type, current_unit, ingred] #[type_id, unit_id, unit_id]
-    mult = 1
-    if target[0] != current[0]:#type_id
-        try:
-            conv = cur.execute(f"SELECT unitvol_id, unitmass_id, density FROM Conv_other WHERE ingred_id = {current[2]}").fetchall()[0]#current[2] is ingred_id
-        except IndexError: #there isn't a conversion available for the ingredient
-            return None
-        if current[0] == 2:#mass -> vol or num
-            mult = place_holder([current[0], conv[1], conv[1]], current) / conv[2] # mass / density = vol
-            current[target[0], conv[0], current[2]] #now required type, unitvol_id, same ingredient
-        else:#vol & num -> mass
-            mult = place_holder([current[0], conv[0], conv[0]],current) * conv[2] # vol * density  = mass
-            current = [target[0], conv[1], current[2]] #now required type, unitmass_id, same ingredient
-    if target[1] != current[1]:#unit_id
-        conversions = cur.execute(f"SELECT unit1_id, ratio FROM Conv_same WHERE unit2_id = {target[1]} AND unit1_id <> {target[2]}").fetchall()
-        if len(conversions) == 0:
-            conversions = cur.execute(f"SELECT unit2_id, ratio FROM Conv_same WHERE unit1_id = {target[1]} AND unit2_id <> {target[2]}").fetchall()
-            for conv in conversions:
-                conv[1] = 1 / conv[1]
-        if len(conversions) == 0:
-            return None
-        for conv in conversions:
-            if conv[0] == current[1]:#unit_id matches
-                return mult * conv[1] #return the multiplier, no need to go through rest of loop
-            else:
-                mini_mult = place_holder([target[0], conv[0], target[1]], current)
-                if mini_mult != None:
-                    return mult * conv[1] * mini_mult
-        return None #this point will only be reached if the for loop has been completed without finding a conversion
-    else: #both the type and unit match
-        return mult
-
 def reset(ins, out): #resets input and output boxes
     for take in ins:
         take.delete(0, ctk.END)
@@ -74,6 +40,11 @@ def pretty(out, display): #outputs recipe
         string = "Error - Recipe Not Found"
     else:
         string = f"Servings: {out[0][0]}\n"
+        if out[0][1] == "ERROR":
+            pass
+        else:
+            string += f"Price per Serving: £{out[0][1]/out[0][0]:.2f}\nOverall Price: £{out[0][1]:.2f}\n"
+        string += f"\n"
         long = 0
         pad_char = " "
         for i in range(1, len(out)):
@@ -107,6 +78,43 @@ def multiplier(original, intended):
     frac = intended / original
     return frac, intended
 
+def unit_match(target, current):
+    #target = [target_unit, last_unit] #[unit_id, ingred_id] #If calling for the first time, last_unit is same as target_unit
+    #current = [current_unit, ingred] #[unit_id, unit_id]
+    tar_type = cur.execute(f"SELECT type_id FROM Units WHERE unit_id = {target[0]}").fetchall()[0][0]
+    cur_type = cur.execute(f"SELECT type_id FROM Units WHERE unit_id = {current[0]}").fetchall()[0][0]
+    mult = 1
+    if tar_type != cur_type: #type_id
+        try:
+            conv = cur.execute(f"SELECT unitvol_id, unitmass_id, density FROM Conv_other WHERE ingred_id = {current[1]}").fetchall()[0]#current[1] is ingred_id
+        except IndexError: #there isn't a conversion available for the ingredient
+            return None
+        if cur_type == 2:#mass -> vol or num
+            mult = unit_match([conv[1], conv[1]], current) / conv[2] # mass / density = vol
+            current = [conv[0], current[2]] #now required type, unitvol_id, same ingredient
+        else:#vol & num -> mass
+            mult = unit_match([conv[0], conv[0]], current) * conv[2] # vol * density  = mass
+            current = [conv[1], current[1]] #now required type, unitmass_id, same ingredient
+    if target[0] != current[0]:#unit_id
+        conversions = cur.execute(f"SELECT unit2_id, ratio FROM Conv_same WHERE unit1_id = {target[0]} AND unit2_id <> {target[1]}").fetchall()
+        for conv in conversions:
+            conv[1] = 1 / conv[1]
+        other = cur.execute(f"SELECT unit1_id, ratio FROM Conv_same WHERE unit2_id = {target[0]} AND unit1_id <> {target[1]}").fetchall()
+        for oth in other:
+            conversions.append(oth)
+        if len(conversions) == 0:
+            return None
+        for conv in conversions:
+            if conv[0] == current[0]:#unit_id matches
+                return mult * conv[1] #return the multiplier, no need to go through rest of loop
+            else:
+                mini_mult = unit_match([conv[0], target[0]], current)
+                if mini_mult != None:
+                    return mult * conv[1] * mini_mult
+        return None #this point will only be reached if the for loop has been completed without finding a conversion
+    else: #both the type and unit match
+        return mult
+
 def collect(table, match):
     if table == "Recipes":
         tag = "meal"
@@ -114,30 +122,48 @@ def collect(table, match):
         tag = "swap"
     out = cur.execute(f"""SELECT Ingredients.ingred_id, Ingredients.ingred_name, -- 0,1
 {table}.amount, -- 2
-IF ({table}.unit_id = Ingredients.unit_id, "match", "miss"), -- 3
-{table}.unit_id, Ingredients.unit_id, Units.unit_value -- unit_value for the swap, 4,5,6
+{table}.unit_id, Ingredients.unit_id -- 3,4
 FROM Ingredients, {table}, Units
 WHERE {table}.{tag}_id = {match} -- only first swap for now
 AND {table}.ingred_id = Ingredients.ingred_id
-AND {table}.unit_id = Units.unit_id""").fetchall() # NEED TO FIX SWAP UNIT MATCHING
+AND {table}.unit_id = Units.unit_id""").fetchall()
     return out
 
 def neat(items, frac, button, out):
     for item in items:
-        swap = cur.execute(f"SELECT swap_id, amount FROM Swap_og WHERE {item[0]} = ingred_id").fetchall()
+        repl = False
+        swap = cur.execute(f"SELECT swap_id, amount, unit_id FROM Swap_og WHERE {item[0]} = ingred_id").fetchall()
         if len(swap) != 0 and button == "swap": # if a swap is available
-            frac_swap = multiplier(swap[0][1], item[2])[0] #only first swap for now, also only gets frac from multiplier
-            replacements = collect("Swap_repl", swap[0][0])
+            repl = True
+            replacements = collect("Swap_repl", swap[0][0]) #only first swap for now
+            frac_swap = multiplier(swap[0][1], item[2])[0] #only gets frac from multiplier
+            if item[3] != swap[0][2]: #do the recipe units match the swap units?
+                unit_frac = unit_match([swap[0][2], swap[0][2]], [item[3], item[0]])
+                if unit_frac != None:
+                    frac_swap = frac_swap * unit_frac
+                else:
+                    repl = False
+        if repl:
             out = neat(replacements, frac * frac_swap, "search", out)
-        else:
-            out.append([item[1], item[2] * frac, item[6]])
+        if repl == False:
+            cost = cur.execute(f"SELECT ingred_price FROM Ingredients WHERE ingred_id = {item[0]}").fetchall()[0][0]
+            if item[3] != item[4]: #price match
+                match_frac = unit_match([item[4], item[4]], [item[3], item[0]])
+                if match_frac != None:
+                    cost = cost * match_frac
+                else:
+                    out[0][1] = "ERROR"
+            if out[0][1] != "ERROR":
+                out[0][1] = out[0][1] + (cost * (item[2] * frac))
+            unit = cur.execute(f"SELECT unit_value FROM Units where unit_id = {item[3]}").fetchall()[0][0] #unit_value for the {table}
+            out.append([item[1], item[2] * frac, unit])
     return out
         
 
 def card(recipe_id, intended, button):
     original = cur.execute(f"SELECT servings FROM Meals WHERE {recipe_id} = meal_id").fetchall()[0][0]
     frac_gen, servings = multiplier(original, intended)
-    out = [[servings]]
+    out = [[servings, 0]]
     ingredients = collect("Recipes", recipe_id)
     out = neat(ingredients, frac_gen, button, out)
     return out
