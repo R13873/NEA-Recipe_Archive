@@ -43,7 +43,7 @@ def pretty(out, display): #outputs recipe
         if out[0][1] == "ERROR":
             pass
         else:
-            string += f"Price per Serving: £{out[0][1]/out[0][0]:.2f}\nOverall Price: £{out[0][1]:.2f}\n"
+            string += f"Price per Serving: £{(out[0][1]/100)/out[0][0]:.2f}\nOverall Price: £{out[0][1]/100:.2f}\n" # pence to pounds
         string += f"\n"
         long = 0
         pad_char = " "
