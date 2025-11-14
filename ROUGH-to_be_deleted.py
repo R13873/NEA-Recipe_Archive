@@ -29,6 +29,13 @@ btn_reset.grid(row = 0, column = 1)
 lbl_dec = ctk.CTkLabel(window, text = "0")
 lbl_dec.grid(row = 1, column = 0)
 
+labels = ["This", "is", "a", "test", "it", "worked"]
+for i in range(len(labels)):
+    labels[i] = ctk.CTkLabel(window, text = labels[i])
+    labels[i].grid(row = i, column = 2)
+
+print(labels)
+
 window.mainloop()
 
 #This isn't very useful/important, just re-aquainting myself with customtkinter
