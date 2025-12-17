@@ -134,16 +134,18 @@ def card(recipe_id, intended, button):
     out = neat(ingredients, frac_gen, button, out)
     return out
 
-def tmp(recipe_id):
-    if recipe_id.isnumeric():
-        intended = cur.execute(f"SELECT servings FROM Meals WHERE {recipe_id} = meal_id").fetchall()[0][0]
-        out = card(recipe_id, intended, "swap")
+def tmp(meal_id):
+    if meal_id != "":
+        intended = cur.execute(f"SELECT servings FROM Meals WHERE {meal_id} = meal_id").fetchall()[0][0]
+        name = cur.execute(f"SELECT meal_name FROM Meals WHERE {meal_id} = meal_id").fetchall()[0][0]
+        out = card(meal_id, intended, "swap")
     else:
+        name = "Not Found"
         out = []
-    print(out)
     string = pretty(out)
     display = ctk.CTk()
+    display.title(name)
+    display.geometry("400x600")
     lbl = ctk.CTkLabel(display, text = string)
     lbl.grid(row = 0, column = 0)
     display.mainloop()
-
