@@ -59,7 +59,8 @@ def pretty(out, display): #outputs recipe
                 string += "\n"
     display.configure(text = string)
 
-def find(keyword, multiple): #gets user inputs
+def find(keyword, multiple): 
+    """Get's the user input"""
     check = keyword.get()
     num = multiple.get()
     try:
