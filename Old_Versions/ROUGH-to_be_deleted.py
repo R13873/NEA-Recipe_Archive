@@ -57,6 +57,8 @@ for i in range(len(labels)):
 
 print(labels)
 
+input("continue ")
+
 window.mainloop()
 
 #This isn't very useful/important, just re-aquainting myself with customtkinter

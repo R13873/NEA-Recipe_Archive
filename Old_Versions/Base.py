@@ -1,7 +1,7 @@
 import sqlite3
 import customtkinter as ctk
 
-conn = sqlite3.connect("Recipe_Archive.db")
+conn = sqlite3.connect("C:\\Users\\Lucia\\Documents\\GitHub\\NEA-Recipe_Archive\\Recipe_Archive.db")
 cur = conn.cursor()
 
 ##Unit_type(type_id, type_name)

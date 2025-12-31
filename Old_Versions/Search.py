@@ -3,26 +3,36 @@ import customtkinter as ctk
 
 conn = sqlite3.connect("Recipe_Archive.db")
 cur = conn.cursor()
-def ph():
-    print("hello")
-##    meal_id = cur.execute(f"SELECT meal_id FROM Meals WHERE meal_name = \"{meal_name}\"").fetchall()[0][0]
-##    print(meal_id)
+
+def ph(boxes, check_vars, outputs):
+    for i in range(len(boxes)):
+        if check_vars[i].get() == "on":
+            check.set(value = "off")
+            print(outputs[i])
 
 
 def find(keyword, out):
     global results # global because button can't return value
-    for btn in results:
-        btn.grid_remove()
+    global check_vars
+    for chk in results:
+        chk.grid_remove()
     results = []
+    check_vars = []
     out.grid_remove()
     check = keyword.get()
     string = "%" + check.lower() + "%"
-    outputs = cur.execute(f"SELECT meal_name FROM Meals WHERE meal_name LIKE \"{string}\"").fetchall() # get exact meal name
+    outputs = cur.execute(f"SELECT meal_name, meal_id FROM Meals WHERE meal_name LIKE \"{string}\"").fetchall() # get exact meal name
     if outputs == []:
         out.grid(row = 1, column = 0)
     else:
         for i in range(len(outputs)):
-            results.append(ctk.CTkButton(search, text = outputs[i][0], command = ph))
+            check_vars.append(ctk.StringVar(value = "off"))
+            results.append(ctk.CTkCheckBox(search,
+                                           text = f"outputs[i][1]",
+                                           command = lambda: ph(results, check_vars, outputs),
+                                           variable = check_vars[i],
+                                           onvalue = "on",
+                                           offvalue = "off"))
             results[i].grid(row = i + 1, column = 0)
 
 search = ctk.CTk()
