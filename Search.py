@@ -1,5 +1,6 @@
 import sqlite3
 import customtkinter as ctk
+import Display as dsp
 
 conn = sqlite3.connect("Recipe_Archive.db")
 cur = conn.cursor()
@@ -7,8 +8,8 @@ cur = conn.cursor()
 def ph(boxes, check_vars, outputs):
     for i in range(len(boxes)):
         if check_vars[i].get() == "on":
-            check.set(value = "off")
-            print(outputs[i])
+            check_vars[i].set(value = "off")
+            dsp.tmp(outputs[i][1])
 
 
 def find(keyword, out):
@@ -28,7 +29,7 @@ def find(keyword, out):
         for i in range(len(outputs)):
             check_vars.append(ctk.StringVar(value = "off"))
             results.append(ctk.CTkCheckBox(search,
-                                           text = f"outputs[i][1]",
+                                           text = f"{outputs[i][0]}",
                                            command = lambda: ph(results, check_vars, outputs),
                                            variable = check_vars[i],
                                            onvalue = "on",
