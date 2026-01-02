@@ -5,14 +5,16 @@ import Display as dsp
 conn = sqlite3.connect("Recipe_Archive.db")
 cur = conn.cursor()
 
-def ph(boxes, check_vars, outputs):
+def select(boxes, check_vars, outputs):
+    """Opens the recipe in a seperate window"""
     for i in range(len(boxes)):
         if check_vars[i].get() == "on":
             check_vars[i].set(value = "off")
-            dsp.tmp(outputs[i][1])
+            dsp.page(outputs[i][1])
 
 
 def find(keyword, out):
+    """Generates a list of recipes that match keyword"""
     global results # global because button can't return value
     global check_vars
     for chk in results:
@@ -30,7 +32,7 @@ def find(keyword, out):
             check_vars.append(ctk.StringVar(value = "off"))
             results.append(ctk.CTkCheckBox(search,
                                            text = f"{outputs[i][0]}",
-                                           command = lambda: ph(results, check_vars, outputs),
+                                           command = lambda: select(results, check_vars, outputs),
                                            variable = check_vars[i],
                                            onvalue = "on",
                                            offvalue = "off"))

@@ -4,31 +4,6 @@ import sqlite3
 conn = sqlite3.connect("Recipe_Archive.db")
 cur = conn.cursor()
 
-def pretty(out):
-    """Makes a neat table of information, takes in a 2D array (out)"""
-    if len(out) == 0:
-        string = "Error - Recipe Not Found"
-    else:
-        string = f"Servings: {out[0][0]}\n"
-        if out[0][1] == "ERROR":
-            pass
-        else:
-            string += f"Price per Serving: £{(out[0][1]/100)/out[0][0]:.2f}\nOverall Price: £{out[0][1]/100:.2f}\n" # pence to pounds
-        string += f"\n"
-        long = 0
-        pad_char = " "
-        for i in range(1, len(out)):
-            if len(str(out[i][0])) > long:
-                long = len(str(out[i][0]))
-        for i in range(1, len(out)):
-            if out[i][1] % 1 != 0:
-                string += f"{out[i][0]:{pad_char}<{long}}\t{out[i][1]:.3f} {out[i][2]}"
-            else:
-                string += f"{out[i][0]:{pad_char}<{long}}\t{out[i][1]:.0f} {out[i][2]}"
-            if i != len(out) - 1:
-                string += "\n"
-    return string
-
 def multiplier(original, intended):
     """Finds the fraction by which to multiply the original value to get the intended value"""
     intended = str(intended) #isnumeric only works on string?
@@ -79,73 +54,190 @@ def unit_match(target, current):
     else: #both the type and unit match
         return mult
 
+def pretty(out, widgets, offset_x, offset_y, window):
+    """takes in a 2D array (out) and generates the recipe page"""
+    display = widgets[0]
+    if len(out) == 0:
+        display[0].configure(text = "Error - Recipe Not Found")
+    else:
+        string = f"Servings: {out[0][0]}\n"
+        if out[0][1] == "ERROR":
+            string += f"ERROR - price can't be calculated"
+        else:
+            string += f"Price per Serving: £{(out[0][1]/100)/out[0][0]:.2f}\nOverall Price: £{out[0][1]/100:.2f}" # pence to pounds
+        display[0].configure(text = string)
+        string = ""
+        long = 0
+        pad_char = " "
+        for i in range(1, len(out)):
+            if len(str(out[i][0])) > long:
+                long = len(str(out[i][0]))
+        for i in range(1, len(out)):
+            if out[i][1] % 1 != 0:
+                string += f"{out[i][0]:{pad_char}<{long}}\t{out[i][1]:.3f} {out[i][2]}\n"
+            else:
+                string += f"{out[i][0]:{pad_char}<{long}}\t{out[i][1]:.0f} {out[i][2]}\n"
+        display[1].configure(text = string)
+        string = "Make the thing :)"
+        display[2].configure(text = string)
+
+    for i in range(3):
+        display[i].place(x = 0, y = offset_y)
+        window.update_idletasks()
+        offset_y += display[i].winfo_height()
+        tmp = display[i].winfo_width()
+        if tmp > offset_x:
+            offset_x = tmp
+    widgets[3].place(x = 0, y = offset_y)
+    window.update_idletasks()
+    tmp = widgets[3].winfo_width()
+    widgets[4].place(x = tmp, y = offset_y)
+    window.update_idletasks()
+    tmp += widgets[4].winfo_width()
+    if tmp > offset_x:
+        offset_x = tmp
+    widgets[1].place(x = offset_x, y = 0)
+    window.update_idletasks()
+    offset_y = widgets[1].winfo_height()
+    pad_x = 20
+    for swaps in widgets[2]:
+        swaps[0].place(x = offset_x, y = offset_y)
+        window.update_idletasks()
+        offset_y += swaps[0].winfo_height()
+        for swap in swaps[1][1]:
+            swap.place(x = offset_x + pad_x, y = offset_y)
+            window.update_idletasks()
+            offset_y += swap.winfo_height()
+
 def collect(table, match):
-    """Finds the ingredients, either for the recipe or for replacements"""
+    """Collects the list of ingredients
+Takes in the table and ID (recipe or swap)"""
     if table == "Recipes":
         tag = "meal"
     elif table == "Swap_repl":
         tag = "swap"
-    out = cur.execute(f"""SELECT Ingredients.ingred_id, Ingredients.ingred_name, -- 0,1
+    out = cur.execute(
+            f"""SELECT Ingredients.ingred_id, Ingredients.ingred_name, -- 0,1
 {table}.amount, -- 2
 {table}.unit_id, Ingredients.unit_id -- 3,4
-FROM Ingredients, {table}, Units
-WHERE {table}.{tag}_id = {match} -- only first swap for now
-AND {table}.ingred_id = Ingredients.ingred_id
-AND {table}.unit_id = Units.unit_id""").fetchall()
+FROM Ingredients, {table}
+WHERE {table}.{tag}_id = {match}
+AND {table}.ingred_id = Ingredients.ingred_id""").fetchall()
     return out
 
-def neat(items, frac, button, out):
-    """collects all ingredients in a neat list & calculates the price"""
+def price(items, frac, out):
+    """Collects all ingredients into a neat list & calculates the price"""
     for item in items:
-        repl = False
-        swap = cur.execute(f"SELECT swap_id, amount, unit_id FROM Swap_og WHERE {item[0]} = ingred_id").fetchall()
-        if len(swap) != 0 and button == "swap": # if a swap is available and wanted
-            repl = True
-            replacements = collect("Swap_repl", swap[0][0]) #only first swap for now
-            frac_swap = multiplier(swap[0][1], item[2])[0] #only gets frac from multiplier
-            if item[3] != swap[0][2]: #do the recipe units match the swap units?
-                unit_frac = unit_match([swap[0][2], swap[0][2]], [item[3], item[0]])
-                if unit_frac != None:
-                    frac_swap = frac_swap * unit_frac
-                else:
-                    repl = False
-        if repl:
-            out = neat(replacements, frac * frac_swap, "search", out)
-        if repl == False:
-            cost = cur.execute(f"SELECT ingred_price FROM Ingredients WHERE ingred_id = {item[0]}").fetchall()[0][0]
-            if item[3] != item[4]: #price match
-                match_frac = unit_match([item[4], item[4]], [item[3], item[0]])
-                if match_frac != None:
-                    cost = cost * match_frac
-                else:
-                    out[0][1] = "ERROR"
-            if out[0][1] != "ERROR":
-                out[0][1] = out[0][1] + (cost * (item[2] * frac))
-            unit = cur.execute(f"SELECT unit_value FROM Units where unit_id = {item[3]}").fetchall()[0][0] #unit_value for the {table}
-            out.append([item[1], item[2] * frac, unit])
+        cost = cur.execute(
+            f"""SELECT ingred_price
+FROM Ingredients
+WHERE ingred_id = {item[0]}""").fetchall()[0][0]
+        if item[3] != item[4]: #price match
+            match_frac = unit_match([item[4], item[4]], [item[3], item[0]])
+            if match_frac != None:
+                cost = cost * match_frac
+            else:
+                out[0][1] = "ERROR"
+        if out[0][1] != "ERROR":
+            out[0][1] = out[0][1] + (cost * (item[2] * frac))
+        unit = cur.execute(
+            f"""SELECT unit_value
+FROM Units
+WHERE unit_id = {item[3]}""").fetchall()[0][0]
+        out.append([item[1], item[2] * frac, unit])
     return out
 
-def card(recipe_id, intended, button):
-    """prepends the list of ingrients with the servings"""
-    original = cur.execute(f"SELECT servings FROM Meals WHERE {recipe_id} = meal_id").fetchall()[0][0]
-    frac_gen, servings = multiplier(original, intended)
+def neat(meal_id, intended):
+    """Prepends the list of ingredients with the servings"""
+    num = intended.get()
+    original = cur.execute(
+        f"""SELECT servings
+FROM Meals
+WHERE {meal_id} = meal_id""").fetchall()[0][0]
+    frac, servings = multiplier(original, num)
     out = [[servings, 0]]
-    ingredients = collect("Recipes", recipe_id)
-    out = neat(ingredients, frac_gen, button, out)
+    ingredients = collect("Recipes", meal_id)
+    out = price(ingredients, frac, out)
     return out
 
-def tmp(meal_id):
-    if meal_id != "":
-        intended = cur.execute(f"SELECT servings FROM Meals WHERE {meal_id} = meal_id").fetchall()[0][0]
-        name = cur.execute(f"SELECT meal_name FROM Meals WHERE {meal_id} = meal_id").fetchall()[0][0]
-        out = card(meal_id, intended, "swap")
-    else:
-        name = "Not Found"
-        out = []
-    string = pretty(out)
-    display = ctk.CTk()
-    display.title(name)
-    display.geometry("400x600")
-    lbl = ctk.CTkLabel(display, text = string)
-    lbl.grid(row = 0, column = 0)
-    display.mainloop()
+def recalc(meal_id, ent_serv, widgets, offset_x, offset_y, window):
+    """Recalculates recipe"""
+    out = neat(meal_id, ent_serv)
+    pretty(out, widgets, offset_x, offset_y, window)
+
+def check(meal_id, window):
+    """Checks which ingredients can be swapped and generates a list of checkboxes
+[[lbl,[[chk_var,...],[chk_box,...]]],...]"""
+    swaps = []
+    ingreds = collect("Recipes", meal_id)
+    for ingred in ingreds:
+        repls = cur.execute(f"SELECT swap_id FROM Swap_og WHERE {ingred[0]} = ingred_id").fetchall()
+        if len(repls) != 0: #is there a swap available?
+            swaps.append([ctk.CTkLabel(window, text = ingred[1]), [[], []]]) #the ingredient being replaced
+            for i in range(len(repls)):
+                repl = repls[i]
+                items = collect("Swap_repl", repl[0])
+                string = ""
+                for item in items:
+                    string += str(item[1]) + " + "
+                string = string[:-3] #cuts of the exces " + "
+                swaps[-1][1][0].append(ctk.StringVar(value = "off"))
+                swaps[-1][1][1].append(ctk.CTkCheckBox(window,
+                                                    text = string,
+                                                    command = lambda: print("check"),
+                                                    variable = swaps[-1][1][0][i],
+                                                    onvalue = "on",
+                                                    offvalue = "off"))
+    return swaps
+
+def page(meal_id):
+    """Generates the recipe page"""
+    name, serve = cur.execute(
+        f"""SELECT meal_name, servings
+        FROM Meals
+        WHERE {meal_id} = meal_id""").fetchall()[0]
+    
+    window = ctk.CTk()
+    window.title(name)
+    window.geometry("800x500")
+    widgets = []
+    offset_x = 0
+    offset_y = 0
+
+    lbl_serv = ctk.CTkLabel(window, text = "Servings:")
+    ent_serv = ctk.CTkEntry(window, placeholder_text = str(serve))
+
+    lbl_extra = ctk.CTkLabel(window, text = "") #for servings, prices, etc.
+    lbl_ingred = ctk.CTkLabel(window, text = "")
+    lbl_instruct = ctk.CTkLabel(window, text = "")
+    display = [lbl_extra, lbl_ingred, lbl_instruct]
+
+    lbl_swap = ctk.CTkLabel (window, text = "Replacements")
+    swaps = check(meal_id, window) #will hold all possible swaps for recipe
+    
+    btn_calc = ctk.CTkButton(window, text = "Recalculate",
+                             command = lambda: recalc(meal_id,
+                                                      ent_serv,
+                                                      widgets,
+                                                      offset_x,
+                                                      offset_y,
+                                                      window))
+    btn_print = ctk.CTkButton(window, text = "Print",
+                              command = lambda: print("recipe file generated"))
+
+    widgets = [display, lbl_swap, swaps, btn_calc, btn_print] #placement varies depending on conent
+
+    lbl_serv.place(x = 0, y = 0)
+    window.update_idletasks() #calls all the events that are pending without processing any other events or callback
+    offset_x = lbl_serv.winfo_width()
+    ent_serv.place(x = offset_x, y = 0)
+    window.update_idletasks() #in this case it forces ctk to calculate the geometry
+    offset_x += ent_serv.winfo_width()
+    offset_y = lbl_serv.winfo_height()
+    tmp = ent_serv.winfo_height()
+    if tmp > offset_y:
+        offset_y = tmp
+
+    recalc(meal_id, ent_serv, widgets, offset_x, offset_y, window)
+    window.mainloop()
+page(5)
