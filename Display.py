@@ -81,7 +81,7 @@ def pretty(out, widgets, offset_x, offset_y, window):
         string = "Make the thing :)"
         display[2].configure(text = string)
 
-    for i in range(3):
+    for i in range(3): #placement math
         display[i].place(x = 0, y = offset_y)
         window.update_idletasks()
         offset_y += display[i].winfo_height()
@@ -125,6 +125,22 @@ WHERE {table}.{tag}_id = {match}
 AND {table}.ingred_id = Ingredients.ingred_id""").fetchall()
     return out
 
+def replace(swaps):
+    """Replaces allergens with selected substitute"""
+    repls = []
+    for swap in swaps: #each item that can be replaced
+        count = 0
+        for i in range(len(swap[1][0])):
+            if swap[1][0][i].get() == "on":
+                count += 1
+                repl = swap[1][2][i]
+        if count == 1:
+                repls.append(repl)
+        else:
+            for check in swap[1][0]:
+                    check.set(value = "off")
+    return(repls)
+
 def price(items, frac, out):
     """Collects all ingredients into a neat list & calculates the price"""
     for item in items:
@@ -147,7 +163,7 @@ WHERE unit_id = {item[3]}""").fetchall()[0][0]
         out.append([item[1], item[2] * frac, unit])
     return out
 
-def neat(meal_id, intended):
+def neat(meal_id, intended, repls):
     """Prepends the list of ingredients with the servings"""
     num = intended.get()
     original = cur.execute(
@@ -157,26 +173,52 @@ WHERE {meal_id} = meal_id""").fetchall()[0][0]
     frac, servings = multiplier(original, num)
     out = [[servings, 0]]
     ingredients = collect("Recipes", meal_id)
+    replace = []
+    for p in range(len(ingredients)):
+        ingred = ingredients[p]
+        swaps = cur.execute(f"SELECT swap_id, amount, unit_id FROM Swap_og WHERE {ingred[0]} = ingred_id").fetchall()
+        if len(swaps) != 0 and len(repls) != 0:
+            for i in range(len(swaps)):
+                swap_id = swaps[i][0]
+                if swap_id in repls:
+                    swap = collect("Swap_repl", swap_id)
+                    frac_swap = multiplier(swaps[i][1], ingred[2])[0]
+                    if ingred[3] != swaps[i][2]:
+                        unit_frac = unit_match([swaps[i][2], swaps[i][2]], [ingred[3], ingred[0]])
+                        if unit_frac != None:
+                            frac_swap = frac_swap * unit_frac
+                    for i2 in range(len(swap)):
+                        swap[i2] = [swap[i2][0], swap[i2][1], swap[i2][2] * frac_swap, swap[i2][3], swap[i2][4]]
+                    replace.append([p, swap])
+    o = 0 #offset
+    i = 0
+    while len(replace) != 0:
+        if i == replace[0][0]:
+            ingredients = ingredients[:i+o] + replace[0][1] + ingredients[i+o+1:]
+            o += len(replace[0][1]) - 1
+            replace = replace[1:]
+        i += 1
     out = price(ingredients, frac, out)
     return out
 
-def recalc(meal_id, ent_serv, widgets, offset_x, offset_y, window):
+def recalc(meal_id, ent_serv, widgets, offset_x, offset_y, window, swaps):
     """Recalculates recipe"""
-    out = neat(meal_id, ent_serv)
+    repls = replace(swaps)
+    out = neat(meal_id, ent_serv, repls)
     pretty(out, widgets, offset_x, offset_y, window)
 
 def check(meal_id, window):
     """Checks which ingredients can be swapped and generates a list of checkboxes
-[[lbl,[[chk_var,...],[chk_box,...]]],...]"""
+[[lbl,[[chk_var,...],[chk_box,...],[swap_id,...]]],...]"""
     swaps = []
     ingreds = collect("Recipes", meal_id)
     for ingred in ingreds:
         repls = cur.execute(f"SELECT swap_id FROM Swap_og WHERE {ingred[0]} = ingred_id").fetchall()
         if len(repls) != 0: #is there a swap available?
-            swaps.append([ctk.CTkLabel(window, text = ingred[1]), [[], []]]) #the ingredient being replaced
+            swaps.append([ctk.CTkLabel(window, text = ingred[1]), [[], [], []]]) #the ingredient being replaced
             for i in range(len(repls)):
-                repl = repls[i]
-                items = collect("Swap_repl", repl[0])
+                repl = repls[i][0]
+                items = collect("Swap_repl", repl)
                 string = ""
                 for item in items:
                     string += str(item[1]) + " + "
@@ -184,10 +226,11 @@ def check(meal_id, window):
                 swaps[-1][1][0].append(ctk.StringVar(value = "off"))
                 swaps[-1][1][1].append(ctk.CTkCheckBox(window,
                                                     text = string,
-                                                    command = lambda: print("check"),
+                                                    command = lambda: replace(swaps),
                                                     variable = swaps[-1][1][0][i],
                                                     onvalue = "on",
                                                     offvalue = "off"))
+                swaps[-1][1][2].append(repl)
     return swaps
 
 def page(meal_id):
@@ -221,7 +264,8 @@ def page(meal_id):
                                                       widgets,
                                                       offset_x,
                                                       offset_y,
-                                                      window))
+                                                      window,
+                                                      swaps))
     btn_print = ctk.CTkButton(window, text = "Print",
                               command = lambda: print("recipe file generated"))
 
@@ -238,6 +282,5 @@ def page(meal_id):
     if tmp > offset_y:
         offset_y = tmp
 
-    recalc(meal_id, ent_serv, widgets, offset_x, offset_y, window)
+    recalc(meal_id, ent_serv, widgets, offset_x, offset_y, window, swaps)
     window.mainloop()
-page(5)
