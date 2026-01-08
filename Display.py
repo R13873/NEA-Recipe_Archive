@@ -207,6 +207,45 @@ def recalc(meal_id, ent_serv, widgets, offset_x, offset_y, window, swaps):
     out = neat(meal_id, ent_serv, repls)
     pretty(out, widgets, offset_x, offset_y, window)
 
+def download(meal_id, ent_serv, swaps):
+    """Recalculates recipe"""
+    repls = replace(swaps)
+    out = neat(meal_id, ent_serv, repls)
+    og = cur.execute(f"""SELECT meal_name FROM Meals WHERE {meal_id} = meal_id""").fetchall()[0][0]
+    name = ""
+    for c in og:
+        c = c.lower()
+        if c == " ":
+            name += ("_")
+        if c in "abcdefghijklmnopqrstuvwxyz":
+            name += (c)
+        else:
+            name += ("X")
+    if len(out) == 0:
+        string = "No recipe :("
+    else:
+        string = f"Servings: {out[0][0]}\n"
+        if out[0][1] == "ERROR":
+            string += f"ERROR - price can't be calculated"
+        else:
+            string += f"Price per Serving: £{(out[0][1]/100)/out[0][0]:.2f}\nOverall Price: £{out[0][1]/100:.2f}\n" # pence to pounds
+        string += "\n"
+        long = 0
+        pad_char = " "
+        for i in range(1, len(out)):
+            if len(str(out[i][0])) > long:
+                long = len(str(out[i][0]))
+        for i in range(1, len(out)):
+            if out[i][1] % 1 != 0:
+                string += f"{out[i][0]:{pad_char}<{long}}\t{out[i][1]:.3f} {out[i][2]}\n"
+            else:
+                string += f"{out[i][0]:{pad_char}<{long}}\t{out[i][1]:.0f} {out[i][2]}\n"
+        string += "\n"
+        string += "Make the thing :)"
+    file = open(f"{name}.txt", "a")
+    file.write(string)
+    file.close()
+
 def check(meal_id, window):
     """Checks which ingredients can be swapped and generates a list of checkboxes
 [[lbl,[[chk_var,...],[chk_box,...],[swap_id,...]]],...]"""
@@ -266,8 +305,10 @@ def page(meal_id):
                                                       offset_y,
                                                       window,
                                                       swaps))
-    btn_print = ctk.CTkButton(window, text = "Print",
-                              command = lambda: print("recipe file generated"))
+    btn_print = ctk.CTkButton(window, text = "Download",
+                              command = lambda: download(meal_id,
+                                                      ent_serv,
+                                                      swaps))
 
     widgets = [display, lbl_swap, swaps, btn_calc, btn_print] #placement varies depending on conent
 
