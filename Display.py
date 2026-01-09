@@ -208,19 +208,31 @@ def recalc(meal_id, ent_serv, widgets, offset_x, offset_y, window, swaps):
     pretty(out, widgets, offset_x, offset_y, window)
 
 def download(meal_id, ent_serv, swaps):
-    """Recalculates recipe"""
+    """Downloads the recipe as a txt file"""
     repls = replace(swaps)
     out = neat(meal_id, ent_serv, repls)
-    og = cur.execute(f"""SELECT meal_name FROM Meals WHERE {meal_id} = meal_id""").fetchall()[0][0]
+    no = []
+    for swap in swaps: #each item that can be replaced
+        repl = False
+        for i in range(len(swap[1][0])):
+            if swap[1][0][i].get() == "on":
+                repl = True
+        if repl:
+            no.append(swap[0].cget("text"))
+    og = [cur.execute(f"""SELECT meal_name FROM Meals WHERE {meal_id} = meal_id""").fetchall()[0][0]]
+    words = og + no
     name = ""
-    for c in og:
-        c = c.lower()
-        if c == " ":
-            name += ("_")
-        if c in "abcdefghijklmnopqrstuvwxyz":
-            name += (c)
-        else:
-            name += ("X")
+    for i in range(len(words)):
+        if i !=0:
+            name += "_NO_"
+        for c in words[i]:
+            c = c.lower()
+            if c == " ":
+                name += ("_")
+            if c in "abcdefghijklmnopqrstuvwxyz":
+                name += (c)
+            else:
+                name += ("X")
     if len(out) == 0:
         string = "No recipe :("
     else:
@@ -245,6 +257,7 @@ def download(meal_id, ent_serv, swaps):
     file = open(f"{name}.txt", "a")
     file.write(string)
     file.close()
+    
 
 def check(meal_id, window):
     """Checks which ingredients can be swapped and generates a list of checkboxes
