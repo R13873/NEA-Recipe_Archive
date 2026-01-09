@@ -229,7 +229,7 @@ def download(meal_id, ent_serv, swaps):
             c = c.lower()
             if c == " ":
                 name += ("_")
-            if c in "abcdefghijklmnopqrstuvwxyz":
+            elif c in "abcdefghijklmnopqrstuvwxyz":
                 name += (c)
             else:
                 name += ("X")
