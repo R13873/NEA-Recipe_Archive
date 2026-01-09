@@ -254,9 +254,14 @@ def download(meal_id, ent_serv, swaps):
                 string += f"{out[i][0]:{pad_char}<{long}}\t{out[i][1]:.0f} {out[i][2]}\n"
         string += "\n"
         string += "Make the thing :)"
-    file = open(f"{name}.txt", "a")
+    file = open(f"{name}.txt", "w")
     file.write(string)
     file.close()
+    confirm = ctk.CTk()
+    confirm.title(f"{name}-download")
+    lbl = ctk.CTkLabel(confirm, text = "Download successful!")
+    lbl.grid(row = 0, column = 0)
+    confirm.mainloop()
     
 
 def check(meal_id, window):
