@@ -1,9 +1,0 @@
-Servings: 2
-Price per Serving: £0.04
-Overall Price: £0.09
-
-soya milk    	60 ml
-flour        	62 g
-baking powder	0.600 tsp
-
-Make the thing :)
