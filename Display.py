@@ -16,9 +16,9 @@ def multiplier(original, intended):
 
 def unit_match(target, current):
     """Finds the value by which to multiply the current value to change units
-    target = [target_unit, last_unit] OR [unit_id, ingred_id]
+    target = [target_unit, last_unit] OR [unit_id, unit_id]
     If calling for the first time, last_unit is same as target_unit
-    current = [current_unit, ingred] OR [unit_id, unit_id]
+    current = [current_unit, ingred] OR [unit_id, ingred_id]
     If it can't find a conversion rate, it will return None"""
     tar_type = cur.execute(f"SELECT type_id FROM Units WHERE unit_id = {target[0]}").fetchall()[0][0]
     cur_type = cur.execute(f"SELECT type_id FROM Units WHERE unit_id = {current[0]}").fetchall()[0][0]
