@@ -126,7 +126,7 @@ AND {table}.ingred_id = Ingredients.ingred_id""").fetchall()
     return out
 
 def replace(swaps):
-    """Replaces allergens with selected substitute"""
+    """Returns which ingredients should be replaced with which selected substitute"""
     repls = []
     for swap in swaps: #each item that can be replaced
         count = 0
@@ -134,9 +134,9 @@ def replace(swaps):
             if swap[1][0][i].get() == "on":
                 count += 1
                 repl = swap[1][2][i]
-        if count == 1:
+        if count == 1: #only one substite can be selected for any ingredient
                 repls.append(repl)
-        else:
+        else: #if more than one selected, reset
             for check in swap[1][0]:
                     check.set(value = "off")
     return(repls)
@@ -173,7 +173,7 @@ WHERE {meal_id} = meal_id""").fetchall()[0][0]
     frac, servings = multiplier(original, num)
     out = [[servings, 0]]
     ingredients = collect("Recipes", meal_id)
-    replace = []
+    new = []
     for p in range(len(ingredients)):
         ingred = ingredients[p]
         swaps = cur.execute(f"SELECT swap_id, amount, unit_id FROM Swap_og WHERE {ingred[0]} = ingred_id").fetchall()
@@ -189,14 +189,14 @@ WHERE {meal_id} = meal_id""").fetchall()[0][0]
                             frac_swap = frac_swap * unit_frac
                     for i2 in range(len(swap)):
                         swap[i2] = [swap[i2][0], swap[i2][1], swap[i2][2] * frac_swap, swap[i2][3], swap[i2][4]]
-                    replace.append([p, swap])
+                    new.append([p, swap]) #index of ingredient to be replaced, and relplacement
     o = 0 #offset
     i = 0
-    while len(replace) != 0:
-        if i == replace[0][0]:
-            ingredients = ingredients[:i+o] + replace[0][1] + ingredients[i+o+1:]
-            o += len(replace[0][1]) - 1
-            replace = replace[1:]
+    while len(new) != 0:
+        if i == new[0][0]: #ingredient index == replacement location
+            ingredients = ingredients[:i+o] + new[0][1] + ingredients[i+o+1:]
+            o += len(new[0][1]) - 1
+            new = new[1:]
         i += 1
     out = price(ingredients, frac, out)
     return out
@@ -279,7 +279,7 @@ def check(meal_id, window):
                 string = ""
                 for item in items:
                     string += str(item[1]) + " + "
-                string = string[:-3] #cuts of the exces " + "
+                string = string[:-3] #cuts of the excess " + "
                 swaps[-1][1][0].append(ctk.StringVar(value = "off"))
                 swaps[-1][1][1].append(ctk.CTkCheckBox(window,
                                                     text = string,
@@ -328,7 +328,7 @@ def page(meal_id):
                                                       ent_serv,
                                                       swaps))
 
-    widgets = [display, lbl_swap, swaps, btn_calc, btn_print] #placement varies depending on conent
+    widgets = [display, lbl_swap, swaps, btn_calc, btn_print] #placement varies depending on content
 
     lbl_serv.place(x = 0, y = 0)
     window.update_idletasks() #calls all the events that are pending without processing any other events or callback
