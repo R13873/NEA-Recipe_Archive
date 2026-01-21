@@ -15,7 +15,7 @@ def select(boxes, check_vars, outputs):
 
 def find(keyword, out):
     """Generates a list of recipes that match keyword"""
-    global results # global because button can't return value
+    global results #global because button can't return value
     global check_vars
     for chk in results:
         chk.grid_remove()
@@ -24,8 +24,8 @@ def find(keyword, out):
     out.grid_remove()
     check = keyword.get()
     string = "%" + check.lower() + "%"
-    outputs = cur.execute(f"SELECT meal_name, meal_id FROM Meals WHERE meal_name LIKE \"{string}\"").fetchall() # get exact meal name
-    if outputs == [] or string == "%%":
+    outputs = cur.execute(f"SELECT meal_name, meal_id FROM Meals WHERE meal_name LIKE \"{string}\"").fetchall() #get exact meal name
+    if outputs == [] or string == "%%": #no results or no search
         out.grid(row = 1, column = 0)
     else:
         for i in range(len(outputs)):
