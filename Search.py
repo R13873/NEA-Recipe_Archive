@@ -25,7 +25,7 @@ def find(keyword, out):
     check = keyword.get()
     string = "%" + check.lower() + "%"
     outputs = cur.execute(f"SELECT meal_name, meal_id FROM Meals WHERE meal_name LIKE \"{string}\"").fetchall() # get exact meal name
-    if outputs == []:
+    if outputs == [] or string == "%%":
         out.grid(row = 1, column = 0)
     else:
         for i in range(len(outputs)):

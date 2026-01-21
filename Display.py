@@ -7,7 +7,7 @@ cur = conn.cursor()
 def multiplier(original, intended):
     """Finds the fraction by which to multiply the original value to get the intended value"""
     intended = str(intended) #isnumeric only works on string?
-    if not intended.isnumeric():
+    if not intended.isnumeric() or intended == "0":
         intended = original #if value wasn't given, return unedited recipe
     else:
         intended = int(intended)
