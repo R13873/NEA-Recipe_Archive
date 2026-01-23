@@ -73,8 +73,7 @@
 		density DECIMAL, -- density = mass/vol
 		FOREIGN KEY (ingred_id) REFERENCES Ingredients (ingred_id),
 		FOREIGN KEY (unitvol_id) REFERENCES Units (unit_id),
-		FOREIGN KEY (unitmass_id) REFERENCES Units (unit_id));
-	
+		FOREIGN KEY (unitmass_id) REFERENCES Units (unit_id));	
 -- }}}
 
 -- {{{ Data
@@ -115,5 +114,4 @@
 .import Conv_other.csv tmp
 	INSERT INTO Conv_other (ingred_id, unitvol_id, unitmass_id, density) SELECT ingred_id, unitvol_id, unitmass_id, density FROM tmp;
 	DROP TABLE tmp;
-
 -- }}}
