@@ -135,7 +135,7 @@ def replace(swaps):
                 count += 1
                 repl = swap[1][2][i]
         if count == 1: #only one substite can be selected for any ingredient
-                repls.append(repl)
+            repls.append(repl)
         else: #if more than one selected, reset
             for check in swap[1][0]:
                     check.set(value = "off")
